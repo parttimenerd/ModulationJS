@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Simulation der Amplituden- und Frequenzmodulation</title>
+        <style type="text/css">
+            div.description {
+                margin-left: 100px;
+                width:600px;
+                font-family: Arial;
+                border-top-style: dotted;
+                border-top-color: grey;
+                /*                padding-top: 20px;*/
+                display: none;
+            }
+            div.description[display = none]{
+                border-top-style: none;
+            }
+            p.foottext {
+                text-align: center;
+                margin-bottom: 12px;
+                font-size: 10px;
+                font-family: Arial;
+            }
+            div.hint_title {
+                font-variant: small-caps;
+                font-size: larger;
+            }
+            div.hint_text {
+                margin-left: 50px;
+                font-size: 17px;
+            }
+        </style>
+        <script type="text/javascript">
+            var Application = {
+                canvas: document.getElementById("canvas"),
+                context: null,
+                width: 800,
+                height: 300,
+                pause: 0.05,
+                c: 30,
+                dist: 1,
+                time: 0,
+                amplitude: 75,
+                amplitude2: 75,
+                frequency: 0.2,
+                frequency2: 0,
+                modulation: 0, //0 = no, 1 = AM, 2 = FM
+                modarr: new Array("KM", "AM", "FM", "PM", "?"),
+                T: 0,
+                slider_base: {},
+                pointarr: new Array(),
+                pointarr2: new Array(),
+                pointarr3: new Array(),
+                is_pause: false,
+                i: 10, //Modulationsindex
+            };
+            function calc(){
+                freq_pi = Math.PI * 2 * Application.frequency;
+                freq_pi_time = freq_pi * Application.time;
+                freq_pi_c = freq_pi / Application.c;
+                freq_pi2 = Math.PI * 2 * Application.frequency2;
+                freq_pi_time2 = freq_pi2 * Application.time;
+                freq_pi_c2 = freq_pi2 / Application.c;
+                for (i = 0; i < Application.width; i += Application.dist) {
+                    //val = Math.sin(i / 100 + (Application.time / 100));
+                    firstval = Math.sin(freq_pi_time - (freq_pi_c * i));
+                    secondval = Math.sin(freq_pi_time2 - (freq_pi_c2 * i));
+                    switch(Application.modulation){
+                        case 1: //AM
+                            thirdval = (Application.amplitude - (firstval * Application.amplitude2)) * secondval;
+                            break;
+                        case 2: //FM
+                            //thirdval = Application.amplitude2 * Math.sin(freq_pi_time2 - (freq_pi_c2 * (i - (Application.amplitude * firstval))));
+                            thirdval = Application.amplitude2 * Math.sin(freq_pi_time2 + (Application.i * Math.sin(freq_pi_time - (freq_pi_c * i))) - (freq_pi_c2 * i));
+                            break;// 
+                        case 3: //PM
+                            thirdval = Application.amplitude2 * Math.sin(freq_pi_time2 + (2 * Math.PI * Application.i * firstval) - (freq_pi_c2 * i));
+                            break;// 
+                        default:
+                            thirdval = (Application.amplitude * firstval) + (Application.amplitude2 * secondval);
+                            break;
+                    }
+                    Application.pointarr[i] = Application.amplitude * firstval;
+                    Application.pointarr2[i] = Application.amplitude2 * secondval;
+                    Application.pointarr3[i] = thirdval;
+                }
+            }
+            function draw(){
+                context = Application.context;
+                Application.canvas.width = Application.canvas.width;
+                calc();
+                var h2 = Application.height / 2;
+                context.beginPath();
+                context.moveTo(0, Application.pointarr2[i] + h2);
+                for (i = 0; i < Application.pointarr.length; i++) {
+                    val = Application.pointarr2[i] + h2;
+                    context.lineTo(i, val);
+                    context.moveTo(i, val);
+                }
+                context.strokeStyle = "#339933"; //lighter green
+                context.lineWidth = 1;
+                context.stroke();
+                context.beginPath();
+                context.moveTo(0, Application.pointarr[i] + h2);
+                for (i = 0; i < Application.pointarr.length; i++) {
+                    val = Application.pointarr[i] + h2;
+                    context.lineTo(i, val);
+                    context.moveTo(i, val);
+                }
+                context.strokeStyle = "#FF3333" //lighter red
+                context.lineWidth = 1;
+                context.stroke();
+                context.beginPath();
+                context.moveTo(0, Application.pointarr3[i] + h2);
+                for (i = 0; i < Application.pointarr.length; i++) {
+                    val = Application.pointarr3[i] + h2;
+                    context.lineTo(i, val);
+                    context.moveTo(i, val);
+                }
+                context.strokeStyle = "blue"
+                context.lineWidth = 2;
+                context.stroke();
+                //surrounding waves
+//                if (Application.modulation == 1){
+//                    context.beginPath();
+//                    context.moveTo(0, Application.pointarr[i] + h2);
+//                    for (i = 0; i < Application.pointarr.length; i += Application.dist) {
+//                        val = -Application.pointarr[i] + h2 + Application.amplitude2;
+//                        context.lineTo(i, val);
+//                        context.moveTo(i, val);
+//                    }
+//                    context.strokeStyle = "blue";
+//                    context.lineWidth = 0.5;
+//                    context.stroke();
+//                    context.beginPath();
+//                    context.moveTo(0, Application.pointarr[i] + h2);
+//                    for (i = 0; i < Application.pointarr.length; i += Application.dist) {
+//                        val = Application.pointarr[i] + h2 - Application.amplitude2;
+//                        context.lineTo(i, val);
+//                        context.moveTo(i, val);
+//                    }
+//                    context.stroke();
+//                }
+                if (!Application.is_pause){
+                    Application.time += Application.pause;
+                }
+            }
+            
+            Slider = function(){
+                this.max = 10;
+                this.min = 0;
+                this.dist = 0.5;
+                this.fac = 0;
+                this.incr = 0;
+                this.context = null;
+                this.h2 = 0;
+                this.h4 = 0;
+                this.width = 0;
+                this.slider_canvas = null;
+                this.value = 0;
+                this.variable = "";
+                this.unit_text = "Hz"; //e.g. Hz for frequencies
+                this.round_mul = 20;
+                this.pressed = true;
+     
+                this.init = function(slider_canvas, variable, value){
+                    this.incr = (this.dist / (this.max - this.min)) * slider_canvas.width;
+                    this.fac = (this.max - this.min) / slider_canvas.width;
+                    this.context = slider_canvas.getContext("2d");
+                    this.h2 = slider_canvas.height / 2;
+                    this.h4 = this.h2 / 2;
+                    this.width = slider_canvas.width;
+                    this.slider_canvas = slider_canvas;
+                    this.value = value;
+                    this.variable = variable;
+                    this.paint(value - this.min / this.fac);
+                    Application.slider_base[slider_canvas.id] = this;
+                    slider_canvas.onmousedown = function(event){
+                        target = Application.slider_base[event.target.id];
+                        target.pressed = true;
+                        target.paint(event.layerX);
+                    }
+                    slider_canvas.onmouseup = function(event){
+                        Application.slider_base[event.target.id].pressed = false;
+                    }
+                    slider_canvas.onmousemove = function(event){
+                        target = Application.slider_base[event.target.id];
+                        if (target.pressed){
+                            target.paint(event.layerX);
+                        }
+                    }
+                    slider_canvas.onmouseout = function(event){
+                        Application.slider_base[event.target.id].pressed = false;
+                    }
+                }
+                
+                this.round = function(val){
+                    return Math.round(val * this.round_mul) / this.round_mul; 
+                },
+                
+                this.paint = function(x){
+                    this.value = x * this.fac + this.min;
+                    Application[this.variable] = this.value;
+                    this.slider_canvas.width = this.slider_canvas.width;
+                    this.context.fillStyle = "black";
+                    this.context.beginPath();
+                    this.context.moveTo(0, this.h2);
+                    this.context.lineTo(this.slider_canvas.width, this.h2);
+                    this.context.stroke();
+                    for (i = 0; i < this.slider_canvas.width; i += this.incr) {
+                        this.context.beginPath();
+                        this.context.moveTo(i, this.h2 + this.h4);
+                        this.context.lineTo(i, this.h2 - this.h4);
+                        this.context.stroke();
+                        this.context.fillText(this.round(i * this.fac + this.min) + this.unit_text, i, this.slider_canvas.height);
+                    }
+                    this.context.fillStyle = "blue";
+                    this.context.beginPath();
+                    this.context.arc(x, this.h2, this.h2 / 2, 0, Math.PI * 2, true); 
+                    this.context.closePath();
+                    this.context.fill();
+                    //this.context.fillRect(x - this.h4, this.h4, this.h2, this.h2);
+                    this.context.fillStyle = "red";
+                    this.context.fillText(this.round(this.value) + this.unit_text, x - this.h4, this.h4);    
+                }
+            }
+            choose_canvas = function(canvas){
+                this.arr = Application.modarr;
+                this.canvas = null;
+                this.context = null;
+                this.selected_index = 0;
+                this.select = null;
+                this.init = function(canvas){
+                    this.canvas = canvas;
+                    this.context = canvas.getContext("2d");
+                    this.selected_index = 0;
+                    this.select = null;
+                    canvas.onclick = function(event){
+                        Application.choose.paint(event.layerX);
+                    }
+                    this.paint(1);
+                }
+                
+                this.paint = function(x){
+                    this.canvas.width = this.canvas.width;
+                    dist = this.canvas.width / Application.modarr.length;
+                    this.context.font = "20px Calibri";
+                    this.context.fillStyle = "black";
+                    for (i = 0; i < this.arr.length; i++) {
+                        this.context.fillText(this.arr[i], i * dist, this.canvas.height - 5);
+                        if (x > i * dist && x < (i + 1) * dist && this.selected_index != i){
+                            if (this.select != null){
+                                this.select(i);
+                            }
+                            this.selected_index = i;
+                        }
+                    }
+                    this.context.fillStyle = "red";
+                    this.context.fillText(Application.modarr[this.selected_index], this.selected_index * dist, this.canvas.height - 5);
+                }
+            }
+            function init(){
+                if (navigator.appName.indexOf("Internet Explorer") != -1){
+                    document.write('Sie verwenden gerade den Internet Explorer.<br/>'
+                        + ' Aufgrund der mangelhaften Unterstützung des HTML5-Standards, ist es '
+                        + 'empfehlenswert, wenn sie statt diesem Browser einen Browser wie '
+                        + '<a href="https://www.mozilla.com/en-US/firefox/all.html?lang-search=German&x=0&y=0">Firefox<a> verwenden.');
+                }
+                Application.choose = new choose_canvas();
+                Application.choose.init(document.getElementById("choose_canvas"));
+                Application.choose.select = function(index){
+                    old = Application.modulation;
+                    slider_i = Application.slider_base["slider_i"]
+                    slider_a = Application.slider_base["slider_a"];
+                    br_i = document.getElementById("br_i");
+                    br_a = document.getElementById("br_a");
+                    if (Application.modarr[index] == "FM" || Application.modarr[index] == "PM"){
+                        slider_i.slider_canvas.style.display = "block";
+                        br_i.style.display = "block";
+                        slider_a.slider_canvas.style.display = "none";
+                        br_a.style.display = "none";
+                    } else {
+                        slider.slider_canvas.style.display = "none";
+                        br_i.style.display = "none";
+                        Application.slider_base["slider_a"].slider_canvas.style.display = "block";
+                        br_a.style.display = "block";
+                    }
+                    val = document.getElementById(Application.modarr[old]);
+                    if (val != null){
+                        val.style.display = "none";
+                    }
+                    Application.modulation = index;
+                    val = document.getElementById(Application.modarr[index]);
+                    if (val != null){
+                        val.style.display = "block";
+                    }
+                }
+                val = document.getElementById(Application.choose.arr[0]);
+                if (val != null){
+                    val.style.display = "block";
+                }
+                slider = new Slider();
+                slider.max = 1;
+                slider.dist = 0.1;
+                slider.round_mul = 100;
+                slider.init(document.getElementById("slider"), "frequency", 100);
+                slider.pressed = false;
+                slider = new Slider();
+                slider.max = 150;
+                slider.dist = 15;
+                slider.round_mul = 1;
+                slider.unit_text = "px"
+                slider.init(document.getElementById("slider_a"), "amplitude", 800 / 2);
+                slider.pressed = false;
+                slider = new Slider();
+                slider.max = 4;
+                slider.dist = 0.4;
+                slider.init(document.getElementById("slider2"), "frequency2", 100);
+                slider.pressed = false;
+                slider = new Slider();
+                slider.max = 10;
+                slider.dist = 1;
+                slider.unit_text = "";
+                slider.init(document.getElementById("slider_i"), "i", 100);
+                slider.pressed = false;
+                slider.slider_canvas.style.display = "none";
+                Application.canvas = document.getElementById("canvas");
+                Application.context = Application.canvas.getContext("2d");
+                Application.canvas.onclick = function(){
+                    Application.is_pause = !Application.is_pause;
+                }
+                Application.choose.select(0);
+                window.setInterval("draw()", Application.pause * 1000);
+            }
+        </script>
+    </head>
+    <body onload="init();">
+        <noscript>
+        Diese Simulation ist in Javascript geschrieben, deswegen ist sie notwendigerweise 
+        darauf angewiesen, das sie Javascript aktiviert haben bzw. in NoScript dieser Seite 
+        erlaubt haben Javascript zu nutzen.
+        </noscript>
+        <canvas height="300" width="800" id="canvas"></canvas><br/>
+        <canvas height="30" width="800" id="slider"></canvas><br/>
+        <canvas height="30" width="800" id="slider_a"></canvas><br id="br_a"/>
+        <canvas height="30" width="800" id="slider2"></canvas><br/>
+        <canvas height="30" width="800" id="slider_i"></canvas><br id="br_i"/>
+        <canvas height="30" width="200" id="choose_canvas"></canvas>
+        <br/><br/>
+        <div class="description" id="KM">
+            <h3>Keine Modulation</h3>
+            Es findet in diesem Modus keine Modulation statt, die blaue Schwingung 
+            ist stattdessen die Interferenz der grünen und der roten Schwingung.
+        </div>
+        <div class="description" id="AM">
+            <h3>Amplitudenmodulation</h3>
+            Bei der Amplitudemodulation, wird, der Name lässt nichts anderes vermuten, 
+            die Amplitude des Trägers durch die Amplitude des Modulators verändert.<br/><br/>
+            <div class="hint_title">Übrigens</div> 
+            <div class="hint_text">
+                Die Amplitude der roten Schwingung kann man am zweiten Schieber einstellen.<br/>
+            </div>
+        </div>
+        <div class="description" id="FM">
+            <h3>Frequenzmodulation</h3>
+            Bei der Frequenzmodulation, wird, wie der Name schon sagt, die Frequenz des Trägers durch die Frequenz des Modulators verändert.<br>
+            Die für diese Modulation gültige Formel ist
+            <div style="margin-left: 100px">
+                <div style="font-size: larger">
+                    <br/>
+                    f(t) = A<sub><small>t</small></sub> sin(2 π f<sub><small>t</small></sub> + I sin(2 π f<sub><small>m</small></sub>))<br/>
+                </div>
+                <br/>
+                f<sub><small>t</small></sub> = Trägerfrequenz<br/>
+                A<sub><small>t</small></sub> = Trägeramplitude<br/>
+                f<sub><small>m</small></sub> = Modulationsfrequenz<br/>
+                I = Modulationsindex<br/>
+            </div> <br/>
+            Wenn man diese Formel kombiniert, was allgemein unter der Wellengleichung bekannt ist kommt man auf folgende Formel für eine Welle
+            <div style="margin-left: 100px">
+                <div style="font-size: larger">
+                    <br/>
+                    f(t) = A<sub><small>t</small></sub> sin(2 π f<sub><small>t</small></sub> (1 - x * c) + I sin(2 π f<sub><small>m</small></sub> (1 - x * c)))<br/>
+                </div>
+                <br/>
+                x = Entfernung des Punktes zum Ursprung der Welle/Schwingung<br/>
+                c = Ausbreitungsgeschwindigkeit der Welle/Schwingung<br/>
+            </div>
+            <br/>
+            <div class="hint_title">Übrigens</div> 
+            <div class="hint_text"><br/>
+                Den Modulationsindex kann man am dritten Schieber einstellen.<br/>
+            </div>
+            <br/>
+            <div class="hint_title">Wichtig</div>
+            <div class="hint_text"><br/>
+                Die Trägerfrequenz f<sub><small>t</small></sub> muss viel größer 
+                als die Modulationsfrequenz f<sub><small>m</small></sub> um ein sinnvolles Ergebnis zu erzielen.
+            </div>
+            <!--                Quelle: <a href="http://icem-www.folkwang-hochschule.de/~neuhaus/klangsynthese/node29.html">folkwang-hochschule.de</a>-->
+        </div>
+        <div class="description" id="PM">
+            <h3>Phasenmodulation</h3>
+            Bei der Phasenmodulation, wird, wie man auf Grund Namens erahnen kann, die Phase des Trägers durch die Phase des Modulators verändert.<br/>
+            Sie ist sehr eng verwandt mit der Frequenzmodulation, da beide zur Gruppe der Winkelmodualtionsarten gehören.<br/>
+            Die für diese Modulation gültige Formel ist
+            <div style="margin-left: 100px">
+                <div style="font-size: larger">
+                    <br/>
+                    f(t) = A<sub><small>t</small></sub> sin(2 π f<sub><small>t</small></sub> + 2 π I sin(2 π f<sub><small>m</small></sub>))<br/>
+                </div>
+                <br/>
+                f<sub><small>t</small></sub> = Trägerfrequenz<br/>
+                A<sub><small>t</small></sub> = Trägeramplitude<br/>
+                f<sub><small>m</small></sub> = Modulationsfrequenz<br/>
+                I = Modulationsindex<br/>
+            </div> <br/>
+            Wenn man diese Formel kombiniert, was allgemein unter der Wellengleichung bekannt ist kommt man auf folgende Formel für eine Welle
+            <div style="margin-left: 100px">
+                <div style="font-size: larger">
+                    <br/>
+                    f(t) = A<sub><small>t</small></sub> sin(2 π f<sub><small>t</small></sub> (1 - x * c) + 2 π I sin(2 π f<sub><small>m</small></sub> (1 - x * c)))<br/>
+                </div>
+                <br/>
+                x = Entfernung des Punktes zum Ursprung der Welle/Schwingung<br/>
+                c = Ausbreitungsgeschwindigkeit der Welle/Schwingung<br/>
+            </div>
+            <br/>
+            <div class="hint_title">Übrigens</div> 
+            <div class="hint_text"><br/>
+                Den Modulationsindex kann man am zweiten Schieber einstellen.<br/>
+            </div>
+            <br/>
+        </div>
+        <div class="description" id="?">
+            <h3>Benutzungshilfe</h3>
+            Die rote und die grüne Schwingung sind die Ausgangsscwingungen, die blaue die Ergebnisschwingwung.<br/>
+            Mit den einzelnen Schieber können sie folgende Werte einstellen<br/><br/>
+            <div style="margin-left: 50px">
+                <b>1. Schieber:</b> Frequenz der roten Schwingung<br/>
+                <!--                <b>2. Schieber:</b> Amplitude der roten Schwingung<br/>-->
+                <b>2. Schieber:</b> Frequenz der grünen Schwingung<br/>
+            </div>
+            <br/>
+            Der erste Schieber verändert die rote, der zweite die grüne Grundschwingung,
+            das Ergebnis ist dann, abhängig von der gewählten Modulationsart, die blaue Schwingung. <br/>
+            Es sind vier Modulationsarten verfügbar:<br/><br/>
+            <div style="margin-left: 50px">
+                <b>KM:</b> Es findet <b>k</b>eine <b>M</b>odulation statt, sondern eine einfache Interferenz<br/>
+                <b>AM:</b> Es findet eine <b>A</b>mplituden<b>m</b>odulation statt<br/>
+                <b>FM:</b> Es findet eine <b>F</b>requenz<b>m</b>odulation statt<br/>
+                <b>PM:</b> Es findet eine <b>P</b>hasen<b>m</b>odulation statt<br/>
+            </div>
+            <br/>
+            <div class="hint_title">Übrigens</div>
+            <div class="hint_text"><br/>
+                Um die Schwingungen zu stoppen, um z.B. Werte genau einzustellen 
+                klicken sie einfach einmal auf das Feld mit den Schwingungen, wenn sie sie 
+                dann wieder fortsetzen wollen, klicken sie noch einmal auf selbiges.
+                Außerdem besteht die Möglichkeit, durch Rechtsklick - "Grafik speichern unter..." 
+                das aktuelle Schwingungsbild zu speichern.
+            </div>
+            <br/>
+            Lassen sie sich nicht verwirren, wenn ich hier von Schwingung und Welle spreche, 
+            es ist in diesem Zusammenhang ein und dasselbe.<br /><br />
+            <div class="hint_title">Mehr Informationen zu Modualtionsarten</div>
+            <div class="hint_text"><br/>
+                <a href="http://www.diru-beze.de/modulationen/skripte/SuS_W0506/Digitale_Analoge_Modulationen_WS0506.pdf" style="color: black">
+                    Digitale_Analoge_Modulationen_WS0506.pdf
+                </a>
+            </div>
+        </div>
+        <br/>
+        <p class="foottext">
+            © Parttimenerd 2011, Lizenz: <a href="https://www.gnu.org/licenses/gpl-3.0-standalone.html" style="color: black">GNU GPL v3</a> und
+             <a href="https://creativecommons.org/licenses/by-sa/2.0/de/" style="color: black">CC-BY-SA</a>
+        </p>
+    </body>
+</html>
