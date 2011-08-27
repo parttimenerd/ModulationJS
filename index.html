@@ -62,16 +62,17 @@
              * Berechnet die Werte der einzelnen Punkte für die verschiedenen Schwingungen
              */
             function calc(){
-                freq_pi = Math.PI * 2 * Application.frequency;
-                freq_pi_time = freq_pi * Application.time;
-                freq_pi_c = freq_pi / Application.c;
-                freq_pi2 = Math.PI * 2 * Application.frequency2;
-                freq_pi_time2 = freq_pi2 * Application.time;
-                freq_pi_c2 = freq_pi2 / Application.c;
+                var freq_pi = Math.PI * 2 * Application.frequency;
+                var freq_pi_time = freq_pi * Application.time;
+                var freq_pi_c = freq_pi / Application.c;
+                var freq_pi2 = Math.PI * 2 * Application.frequency2;
+                var freq_pi_time2 = freq_pi2 * Application.time;
+                var freq_pi_c2 = freq_pi2 / Application.c;
                 for (i = 0; i < Application.width; i += Application.dist) {
                     //val = Math.sin(i / 100 + (Application.time / 100));
-                    firstval = Math.sin(freq_pi_time - (freq_pi_c * i));
-                    secondval = Math.sin(freq_pi_time2 - (freq_pi_c2 * i));
+                    var firstval = Math.sin(freq_pi_time - (freq_pi_c * i));
+                    var secondval = Math.sin(freq_pi_time2 - (freq_pi_c2 * i));
+                    var thirdval = 0;
                     switch(Application.modulation){
                         case 1: //AM
                             thirdval = (Application.amplitude - (firstval * Application.amplitude2)) * secondval;
@@ -97,14 +98,14 @@
              * Ruft die calc-Methode auf und zeichnet die Werte aus den Wertarrays auf die Zeichenfläche
              */
             function draw(){
-                context = Application.context;
+                var context = Application.context;
                 Application.canvas.width = Application.canvas.width;
                 calc();
                 var h2 = Application.height / 2;
                 context.beginPath();
                 context.moveTo(0, Application.pointarr2[i] + h2);
                 for (i = 0; i < Application.pointarr.length; i++) {
-                    val = Application.pointarr2[i] + h2;
+                    var val = Application.pointarr2[i] + h2;
                     context.lineTo(i, val);
                     context.moveTo(i, val);
                 }
@@ -114,7 +115,7 @@
                 context.beginPath();
                 context.moveTo(0, Application.pointarr[i] + h2);
                 for (i = 0; i < Application.pointarr.length; i++) {
-                    val = Application.pointarr[i] + h2;
+                    var val = Application.pointarr[i] + h2;
                     context.lineTo(i, val);
                     context.moveTo(i, val);
                 }
@@ -124,7 +125,7 @@
                 context.beginPath();
                 context.moveTo(0, Application.pointarr3[i] + h2);
                 for (i = 0; i < Application.pointarr.length; i++) {
-                    val = Application.pointarr3[i] + h2;
+                    var val = Application.pointarr3[i] + h2;
                     context.lineTo(i, val);
                     context.moveTo(i, val);
                 }
@@ -190,7 +191,7 @@
                     this.paint(value - this.min / this.fac);
                     Application.slider_base[slider_canvas.id] = this;
                     slider_canvas.onmousedown = function(event){
-                        target = Application.slider_base[event.target.id];
+                        var target = Application.slider_base[event.target.id];
                         target.pressed = true;
                         target.paint(event.layerX);
                     }
@@ -198,7 +199,7 @@
                         Application.slider_base[event.target.id].pressed = false;
                     }
                     slider_canvas.onmousemove = function(event){
-                        target = Application.slider_base[event.target.id];
+                        var target = Application.slider_base[event.target.id];
                         if (target.pressed){
                             target.paint(event.layerX);
                         }
@@ -265,7 +266,7 @@
                  */
                 this.paint = function(x){
                     this.canvas.width = this.canvas.width;
-                    dist = this.canvas.width / Application.modarr.length;
+                    var dist = this.canvas.width / Application.modarr.length;
                     this.context.font = "20px Calibri";
                     this.context.fillStyle = "black";
                     for (i = 0; i < this.arr.length; i++) {
@@ -296,11 +297,11 @@
                 Application.choose = new choose_canvas();
                 Application.choose.init(document.getElementById("choose_canvas"));
                 Application.choose.select = function(index){
-                    old = Application.modulation;
-                    slider_i = Application.slider_base["slider_i"]
-                    slider_a = Application.slider_base["slider_a"];
-                    br_i = document.getElementById("br_i");
-                    br_a = document.getElementById("br_a");
+                    var old = Application.modulation;
+                    var slider_i = Application.slider_base["slider_i"]
+                    var slider_a = Application.slider_base["slider_a"];
+                    var br_i = document.getElementById("br_i");
+                    var br_a = document.getElementById("br_a");
                     if (Application.modarr[index] == "FM" || Application.modarr[index] == "PM"){
                         slider_i.slider_canvas.style.display = "block";
                         br_i.style.display = "block";
@@ -312,21 +313,17 @@
                         Application.slider_base["slider_a"].slider_canvas.style.display = "block";
                         br_a.style.display = "block";
                     }
-                    val = document.getElementById(Application.modarr[old]);
+                    var val = document.getElementById(Application.modarr[old]);
                     if (val != null){
                         val.style.display = "none";
                     }
                     Application.modulation = index;
-                    val = document.getElementById(Application.modarr[index]);
+                    var val = document.getElementById(Application.modarr[index]);
                     if (val != null){
                         val.style.display = "block";
                     }
                 }
-                val = document.getElementById(Application.choose.arr[4]);
-                if (val != null){
-                    val.style.display = "block";
-                }
-                slider = new Slider();
+                var slider = new Slider();
                 slider.max = 1;
                 slider.dist = 0.1;
                 slider.round_mul = 100;
