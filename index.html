@@ -32,29 +32,35 @@
             }
         </style>
         <script type="text/javascript">
+            /**
+             * Sammlung globaler Variablen
+             */
             var Application = {
-                canvas: document.getElementById("canvas"),
-                context: null,
-                width: 800,
+                canvas: document.getElementById("canvas"), //Zeichencanvas
+                context: null, //canvas 2d Context
+                width: 800, //Breite/Höhe des Zeichencanvas
                 height: 300,
-                pause: 0.05,
-                c: 30,
-                dist: 1,
-                time: 0,
-                amplitude: 75,
-                amplitude2: 75,
-                frequency: 0.2,
-                frequency2: 0,
-                modulation: 0, //0 = no, 1 = AM, 2 = FM
+                pause: 0.05, //Pause zwischen zwei Zeichenvorgängen in s
+                c: 30, //Ausbreitungsgeschwindigkeit der Welle
+                dist: 1, //Abstand zwischen zwei Punkten in px
+                time: 0, //aktuelle Zeit
+                amplitude: 75, //Amplitude der Modulierschwingung
+                amplitude2: 75, //Amplitude der Trägerschwingung
+                frequency: 0.2, //Frequenz der Modulierschwingung
+                frequency2: 0, //Frequenz der Trägerschwingung
+                modulation: 0,  //Modulationsart, siehe folgendes Array
                 modarr: new Array("KM", "AM", "FM", "PM", "?"),
-                T: 0,
-                slider_base: {},
-                pointarr: new Array(),
-                pointarr2: new Array(),
-                pointarr3: new Array(),
+                slider_base: {}, //Hash der Slider
+                pointarr: new Array(), //Wertarray der Modulierschwingung
+                pointarr2: new Array(), //Wertarray der Trägerschwingung
+                pointarr3: new Array(), //Wertarray der Ergebnisschwingung
                 is_pause: false,
                 i: 10, //Modulationsindex
             };
+            
+            /**
+             * Berechnet die Werte der einzelnen Punkte für die verschiedenen Schwingungen
+             */
             function calc(){
                 freq_pi = Math.PI * 2 * Application.frequency;
                 freq_pi_time = freq_pi * Application.time;
@@ -76,8 +82,8 @@
                             break;// 
                         case 3: //PM
                             thirdval = Application.amplitude2 * Math.sin(freq_pi_time2 + (2 * Math.PI * Application.i * firstval) - (freq_pi_c2 * i));
-                            break;// 
-                        default:
+                            break; 
+                        default: //KM
                             thirdval = (Application.amplitude * firstval) + (Application.amplitude2 * secondval);
                             break;
                     }
@@ -86,6 +92,10 @@
                     Application.pointarr3[i] = thirdval;
                 }
             }
+            
+            /**
+             * Ruft die calc-Methode auf und zeichnet die Werte aus den Wertarrays auf die Zeichenfläche
+             */
             function draw(){
                 context = Application.context;
                 Application.canvas.width = Application.canvas.width;
@@ -147,22 +157,25 @@
                 }
             }
             
+            /**
+             * Sliderklasse, Konstruktor ohne Argumente
+             */
             Slider = function(){
-                this.max = 10;
-                this.min = 0;
-                this.dist = 0.5;
+                this.max = 10; //Maximalwert
+                this.min = 0; //Minimalwert
+                this.dist = 0.5; //Abstand zwischen zwei Unterteilungen
                 this.fac = 0;
                 this.incr = 0;
                 this.context = null;
-                this.h2 = 0;
-                this.h4 = 0;
-                this.width = 0;
-                this.slider_canvas = null;
-                this.value = 0;
-                this.variable = "";
-                this.unit_text = "Hz"; //e.g. Hz for frequencies
-                this.round_mul = 20;
-                this.pressed = true;
+                this.h2 = 0; //Höhe / 2
+                this.h4 = 0; //Höhe / 4
+                this.width = 0; //Breite des Sliders
+                this.slider_canvas = null; //Zeichenfläche des Sliders
+                this.value = 0; //aktueller Wert
+                this.variable = ""; //Name der Variable, die im Application-Objekt verändert werden soll
+                this.unit_text = "Hz"; //Einheit
+                this.round_mul = 20; //Genauigkeit der Anzeige = 1 / round_mul
+                this.pressed = false;
      
                 this.init = function(slider_canvas, variable, value){
                     this.incr = (this.dist / (this.max - this.min)) * slider_canvas.width;
@@ -225,12 +238,16 @@
                     this.context.fillText(this.round(this.value) + this.unit_text, x - this.h4, this.h4);    
                 }
             }
+            
+            /**
+             * Auswahlfeld
+             */
             choose_canvas = function(canvas){
-                this.arr = Application.modarr;
-                this.canvas = null;
-                this.context = null;
+                this.arr = Application.modarr; //Array mit den Auswahltexten
+                this.canvas = null; //Zeichenfläche
+                this.context = null; //2d Context der Zeichenfläche
                 this.selected_index = 0;
-                this.select = null;
+                this.select = null; //Methode welche ausgeführt wird, wenn der Benutzer einen Index ausgewählt hat, soll den index erwarten
                 this.init = function(canvas){
                     this.canvas = canvas;
                     this.context = canvas.getContext("2d");
@@ -242,6 +259,10 @@
                     this.paint(1);
                 }
                 
+                /**
+                 * Zeichnet die Auswahltexte auf die Zeichenfläche und setzt den Index, auf den durch die x-Koordinate
+                 * ausgewählten Wert 
+                 */
                 this.paint = function(x){
                     this.canvas.width = this.canvas.width;
                     dist = this.canvas.width / Application.modarr.length;
@@ -260,7 +281,12 @@
                     this.context.fillText(Application.modarr[this.selected_index], this.selected_index * dist, this.canvas.height - 5);
                 }
             }
+            
+            /**
+             * Initialisiert die Simulation
+             */
             function init(){
+                //Browserabrfrage, Warnung vor IE
                 if (navigator.appName.indexOf("Internet Explorer") != -1){
                     document.write('Sie verwenden gerade den Internet Explorer.<br/>'
                         + ' Aufgrund der mangelhaften Unterstützung des HTML5-Standards, ist es '
@@ -296,7 +322,7 @@
                         val.style.display = "block";
                     }
                 }
-                val = document.getElementById(Application.choose.arr[0]);
+                val = document.getElementById(Application.choose.arr[4]);
                 if (val != null){
                     val.style.display = "block";
                 }
@@ -305,32 +331,28 @@
                 slider.dist = 0.1;
                 slider.round_mul = 100;
                 slider.init(document.getElementById("slider"), "frequency", 100);
-                slider.pressed = false;
                 slider = new Slider();
                 slider.max = 150;
                 slider.dist = 15;
                 slider.round_mul = 1;
                 slider.unit_text = "px"
                 slider.init(document.getElementById("slider_a"), "amplitude", 800 / 2);
-                slider.pressed = false;
                 slider = new Slider();
                 slider.max = 4;
                 slider.dist = 0.4;
                 slider.init(document.getElementById("slider2"), "frequency2", 100);
-                slider.pressed = false;
                 slider = new Slider();
                 slider.max = 10;
                 slider.dist = 1;
                 slider.unit_text = "";
                 slider.init(document.getElementById("slider_i"), "i", 100);
-                slider.pressed = false;
                 slider.slider_canvas.style.display = "none";
                 Application.canvas = document.getElementById("canvas");
                 Application.context = Application.canvas.getContext("2d");
                 Application.canvas.onclick = function(){
                     Application.is_pause = !Application.is_pause;
                 }
-                Application.choose.select(0);
+                Application.choose.select(4);
                 window.setInterval("draw()", Application.pause * 1000);
             }
         </script>
@@ -435,17 +457,17 @@
         </div>
         <div class="description" id="?">
             <h3>Benutzungshilfe</h3>
-            Die rote und die grüne Schwingung sind die Ausgangsscwingungen, die blaue die Ergebnisschwingwung.<br/>
+            Die rote und die grüne Schwingung sind die Ausgangsschwingungen, die blaue die Ergebnisschwingwung.<br/>
             Mit den einzelnen Schieber können sie folgende Werte einstellen<br/><br/>
             <div style="margin-left: 50px">
                 <b>1. Schieber:</b> Frequenz der roten Schwingung<br/>
                 <!--                <b>2. Schieber:</b> Amplitude der roten Schwingung<br/>-->
-                <b>2. Schieber:</b> Frequenz der grünen Schwingung<br/>
+                <b>2. bzw. 3. Schieber:</b> Frequenz der grünen Schwingung<br/>
             </div>
             <br/>
             Der erste Schieber verändert die rote, der zweite die grüne Grundschwingung,
             das Ergebnis ist dann, abhängig von der gewählten Modulationsart, die blaue Schwingung. <br/>
-            Es sind vier Modulationsarten verfügbar:<br/><br/>
+            Über die Modusauswahl sind vier Modulationsarten, neben der Hilfe ("?"), verfügbar:<br/><br/>
             <div style="margin-left: 50px">
                 <b>KM:</b> Es findet <b>k</b>eine <b>M</b>odulation statt, sondern eine einfache Interferenz<br/>
                 <b>AM:</b> Es findet eine <b>A</b>mplituden<b>m</b>odulation statt<br/>
